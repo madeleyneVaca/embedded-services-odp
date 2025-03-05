@@ -2,8 +2,8 @@ use embassy_executor::{Executor, Spawner};
 use embassy_sync::once_lock::OnceLock;
 use embassy_time::Timer;
 use embedded_services::{
-    hid::{self, DeviceId},
     comms::{self, EndpointID, Internal},
+    hid::{self, DeviceId},
 };
 use log::*;
 use static_cell::StaticCell;
@@ -49,7 +49,7 @@ impl comms::MailboxDelegate for Device {
 #[embassy_executor::task]
 async fn host() {
     static HOST: OnceLock<Host> = OnceLock::new();
-    let this = HOST.get_or_init(|| Host::new());
+    let this = HOST.get_or_init(Host::new);
     info!("Registering host endpoint");
     comms::register_endpoint(this, &this.tp).await.unwrap();
     loop {

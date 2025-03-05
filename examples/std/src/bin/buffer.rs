@@ -4,8 +4,8 @@ use embassy_executor::Executor;
 use embassy_sync::once_lock::OnceLock;
 use embassy_time::Timer;
 use embedded_services::buffer::*;
-use embedded_services::define_static_buffer;
 use embedded_services::comms::{self, EndpointID, External, Internal};
+use embedded_services::define_static_buffer;
 use log::*;
 use static_cell::StaticCell;
 
