@@ -21,7 +21,7 @@ pub enum AnyState<'a> {
     ConnectedProvider(Device<'a, ConnectedProvider>),
 }
 
-impl<'a> AnyState<'a> {
+impl AnyState<'_> {
     /// Return the kind of the contained state
     pub fn kind(&self) -> StateKind {
         match self {
@@ -105,7 +105,7 @@ impl<'a> Device<'a, Detached> {
     }
 }
 
-impl<'a> Device<'a, Idle> {
+impl Device<'_, Idle> {
     /// Notify the power policy service of an updated consumer power capability
     pub async fn notify_consumer_power_capability(&self, capability: Option<PowerCapability>) -> Result<(), Error> {
         self.notify_consumer_power_capability_internal(capability).await

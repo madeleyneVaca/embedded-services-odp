@@ -21,7 +21,7 @@ pub enum AnyState<'a> {
     ConnectedProvider(Policy<'a, ConnectedProvider>),
 }
 
-impl<'a> AnyState<'a> {
+impl AnyState<'_> {
     /// Return the kind of the contained state
     pub fn kind(&self) -> StateKind {
         match self {

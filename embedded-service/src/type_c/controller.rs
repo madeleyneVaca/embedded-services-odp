@@ -99,7 +99,7 @@ impl<'a> Controller<'a> {
 /// Trait for types that contain a controller struct
 pub trait ControllerContainer {
     /// Get the controller struct
-    fn get_controller<'a>(&'a self) -> &'a Controller<'a>;
+    fn get_controller(&self) -> &Controller<'_>;
 }
 
 /// Internal context for managing PD controllers

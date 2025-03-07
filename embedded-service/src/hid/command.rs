@@ -44,9 +44,9 @@ impl TryFrom<u16> for ReportType {
     }
 }
 
-impl Into<u16> for ReportType {
-    fn into(self) -> u16 {
-        match self {
+impl From<ReportType> for u16 {
+    fn from(val: ReportType) -> Self {
+        match val {
             ReportType::Input => 0x01 << FEATURE_SHIFT,
             ReportType::Output => 0x02 << FEATURE_SHIFT,
             ReportType::Feature => 0x03 << FEATURE_SHIFT,
@@ -77,9 +77,9 @@ impl TryFrom<u16> for PowerState {
     }
 }
 
-impl Into<u16> for PowerState {
-    fn into(self) -> u16 {
-        match self {
+impl From<PowerState> for u16 {
+    fn from(val: PowerState) -> Self {
+        match val {
             PowerState::On => 0x0,
             PowerState::Sleep => 0x1,
         }
@@ -106,9 +106,9 @@ impl TryFrom<u16> for ReportFreq {
     }
 }
 
-impl Into<u16> for ReportFreq {
-    fn into(self) -> u16 {
-        match self {
+impl From<ReportFreq> for u16 {
+    fn from(val: ReportFreq) -> Self {
+        match val {
             ReportFreq::Infinite => 0x0,
             ReportFreq::Msecs(value) => value,
         }
@@ -136,9 +136,9 @@ impl TryFrom<u16> for Protocol {
     }
 }
 
-impl Into<u16> for Protocol {
-    fn into(self) -> u16 {
-        match self {
+impl From<Protocol> for u16 {
+    fn from(val: Protocol) -> Self {
+        match val {
             Protocol::Boot => 0x0,
             Protocol::Report => 0x1,
         }
@@ -183,9 +183,9 @@ impl TryFrom<u16> for Opcode {
     }
 }
 
-impl Into<u16> for Opcode {
-    fn into(self) -> u16 {
-        match self {
+impl From<Opcode> for u16 {
+    fn from(val: Opcode) -> Self {
+        match val {
             Opcode::Reset => 0x01 << OPCODE_SHIFT,
             Opcode::GetReport => 0x02 << OPCODE_SHIFT,
             Opcode::SetReport => 0x03 << OPCODE_SHIFT,
@@ -202,26 +202,20 @@ impl Into<u16> for Opcode {
 impl Opcode {
     /// Return true if the command has data to read from the host
     pub fn requires_host_data(&self) -> bool {
-        match self {
-            Opcode::SetReport | Opcode::SetIdle | Opcode::Vendor => true,
-            _ => false,
-        }
+        matches!(self, Opcode::SetReport | Opcode::SetIdle | Opcode::Vendor)
     }
 
     /// Return true if the command requires a report ID
     pub fn requires_report_id(&self) -> bool {
-        match self {
-            Opcode::GetReport | Opcode::SetReport | Opcode::GetIdle | Opcode::SetIdle => true,
-            _ => false,
-        }
+        matches!(
+            self,
+            Opcode::GetReport | Opcode::SetReport | Opcode::GetIdle | Opcode::SetIdle
+        )
     }
 
     /// Return true if the command has a response read from the data register
     pub fn has_response(&self) -> bool {
-        match self {
-            Opcode::GetReport | Opcode::GetIdle | Opcode::GetProtocol => true,
-            _ => false,
-        }
+        matches!(self, Opcode::GetReport | Opcode::GetIdle | Opcode::GetProtocol)
     }
 }
 
@@ -241,9 +235,9 @@ pub enum Command<'a> {
     Vendor,
 }
 
-impl Into<Opcode> for Command<'_> {
-    fn into(self) -> Opcode {
-        match self {
+impl From<Command<'_>> for Opcode {
+    fn from(val: Command<'_>) -> Self {
+        match val {
             Command::Reset => Opcode::Reset,
             Command::GetReport(_, _) => Opcode::GetReport,
             Command::SetReport(_, _, _) => Opcode::SetReport,
@@ -257,9 +251,9 @@ impl Into<Opcode> for Command<'_> {
     }
 }
 
-impl Into<Opcode> for &Command<'_> {
-    fn into(self) -> Opcode {
-        self.clone().into()
+impl From<&Command<'_>> for Opcode {
+    fn from(val: &Command<'_>) -> Self {
+        val.clone().into()
     }
 }
 
@@ -311,7 +305,7 @@ impl<'a> Command<'a> {
             }
         }
 
-        let report_type = report_type.ok_or_else(|| Error::InvalidReportType);
+        let report_type = report_type.ok_or(Error::InvalidReportType);
         let command = match opcode {
             Opcode::Reset => Command::Reset,
             Opcode::GetReport => {

@@ -174,7 +174,7 @@ impl Endpoint {
     pub const fn uninit(id: EndpointID) -> Self {
         Self {
             node: Node::uninit(),
-            id: id,
+            id,
             delegator: Cell::new(None),
         }
     }
@@ -259,7 +259,7 @@ fn get_list(target: EndpointID) -> &'static OnceLock<IntrusiveList> {
 /// Send a generic message to an endpoint
 pub async fn send(from: EndpointID, to: EndpointID, data: &impl Any) -> Result<(), Infallible> {
     route(Message {
-        from: from,
+        from,
         to,
         data: Data::new(data),
     })

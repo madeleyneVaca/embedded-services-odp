@@ -57,8 +57,8 @@ pub enum Error {
     Timeout,
 }
 
-impl<T> Into<Result<T, Error>> for Error {
-    fn into(self) -> Result<T, Error> {
-        Err(self)
+impl<T> From<Error> for Result<T, Error> {
+    fn from(val: Error) -> Self {
+        Err(val)
     }
 }

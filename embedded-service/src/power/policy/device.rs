@@ -191,7 +191,7 @@ impl Device {
     }
 
     /// Try to provide access to the device actions for the given state
-    pub async fn try_device_action<'a, S: action::Kind>(&'a self) -> Result<action::device::Device<'a, S>, Error> {
+    pub async fn try_device_action<S: action::Kind>(&self) -> Result<action::device::Device<S>, Error> {
         let state = self.state().await.kind();
         if S::kind() != state {
             return Err(Error::InvalidState(S::kind(), state));
@@ -200,7 +200,7 @@ impl Device {
     }
 
     /// Provide access to the current device state
-    pub async fn device_action<'a>(&'a self) -> action::device::AnyState<'a> {
+    pub async fn device_action(&self) -> action::device::AnyState {
         match self.state().await.kind() {
             StateKind::Detached => action::device::AnyState::Detached(action::device::Device::new(self)),
             StateKind::Idle => action::device::AnyState::Idle(action::device::Device::new(self)),
@@ -215,9 +215,7 @@ impl Device {
 
     /// Try to provide access to the policy actions for the given state
     /// Implemented here for lifetime reasons
-    pub(super) async fn try_policy_action<'a, S: action::Kind>(
-        &'a self,
-    ) -> Result<action::policy::Policy<'a, S>, Error> {
+    pub(super) async fn try_policy_action<S: action::Kind>(&self) -> Result<action::policy::Policy<S>, Error> {
         let state = self.state().await.kind();
         if S::kind() != state {
             return Err(Error::InvalidState(S::kind(), state));
@@ -227,7 +225,7 @@ impl Device {
 
     /// Provide access to the current policy actions
     /// Implemented here for lifetime reasons
-    pub(super) async fn policy_action<'a>(&'a self) -> action::policy::AnyState<'a> {
+    pub(super) async fn policy_action(&self) -> action::policy::AnyState {
         match self.state().await.kind() {
             StateKind::Detached => action::policy::AnyState::Detached(action::policy::Policy::new(self)),
             StateKind::Idle => action::policy::AnyState::Idle(action::policy::Policy::new(self)),
@@ -241,7 +239,7 @@ impl Device {
     }
 
     /// Detach the device, this action is available in all states
-    pub async fn detach<'a>(&'a self) -> Result<action::device::Device<'a, action::Detached>, Error> {
+    pub async fn detach(&self) -> Result<action::device::Device<action::Detached>, Error> {
         match self.device_action().await {
             action::device::AnyState::Detached(state) => Ok(state),
             action::device::AnyState::Idle(state) => state.detach().await,

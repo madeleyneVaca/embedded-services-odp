@@ -136,7 +136,7 @@ pub struct IntrusiveIterator {
     current: Option<&'static IntrusiveNode>,
 }
 
-impl<'a> IntoIterator for &'a IntrusiveList {
+impl IntoIterator for &IntrusiveList {
     type IntoIter = IntrusiveIterator;
     type Item = &'static IntrusiveNode;
 
