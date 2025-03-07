@@ -214,7 +214,7 @@ impl CfuComponentDefaultWrapper {
     pub async fn process_request(&self) -> Result<(), CfuError> {
         match self.device.wait_request().await {
             RequestData::FwVersionRequest => {
-                let fwv = self.get_fw_version().await.map_err(|e| CfuError::ProtocolError(e))?;
+                let fwv = self.get_fw_version().await.map_err(CfuError::ProtocolError)?;
                 let dev_inf = FwVerComponentInfo::new(fwv, self.get_component_id(), BankType::SingleBank);
                 let comp_info: [FwVerComponentInfo; MAX_CMPT_COUNT] = [dev_inf; MAX_CMPT_COUNT];
                 let resp = GetFwVersionResponse {

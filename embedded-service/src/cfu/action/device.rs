@@ -26,7 +26,7 @@ pub enum AnyState<'a> {
     FinalizingUpdate(Device<'a, FinalizingUpdate>),
 }
 
-impl<'a> AnyState<'a> {
+impl AnyState<'_> {
     /// Return the kind of the contained state
     pub fn kind(&self) -> ComponentState {
         match self {
@@ -89,7 +89,7 @@ impl<'a> Device<'a, Busy> {
             .device
             .execute_device_request(component::RequestData::GiveContent(chunk))
             .await
-            .map_err(|e| CfuError::ProtocolError(e))?;
+            .map_err(CfuError::ProtocolError)?;
         self.device.send_response(resp).await;
         Err(CfuError::BadImage)
     }
@@ -104,7 +104,7 @@ impl<'a> Device<'a, Idle> {
             .device
             .execute_device_request(component::RequestData::PrepareComponentForUpdate)
             .await
-            .map_err(|e| CfuError::ProtocolError(e))?
+            .map_err(CfuError::ProtocolError)?
         {
             InternalResponseData::PrimaryNeedsSubcomponentsPrepared(ids) => {
                 if self.device.state().await.waiting_on_subs {
@@ -149,7 +149,7 @@ impl<'a> Device<'a, Ready> {
             .device
             .execute_device_request(component::RequestData::GiveOffer(offer))
             .await
-            .map_err(|e| CfuError::ProtocolError(e))?
+            .map_err(CfuError::ProtocolError)?
         {
             InternalResponseData::ComponentBusy => Err(CfuError::ComponentBusy),
             InternalResponseData::OfferResponse(r) => Ok(r),
