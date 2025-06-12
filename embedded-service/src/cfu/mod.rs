@@ -5,12 +5,16 @@ pub mod component;
 use core::sync::atomic::{AtomicBool, Ordering};
 
 use embassy_sync::blocking_mutex::raw::NoopRawMutex;
-use embassy_sync::channel::Channel;
 use embassy_sync::once_lock::OnceLock;
+use embassy_time::{with_timeout, Duration, TimeoutError};
 use embedded_cfu_protocol::protocol_definitions::{CfuProtocolError, ComponentId};
 
-use crate::cfu::component::{CfuDevice, CfuDeviceContainer, InternalResponseData, RequestData, DEVICE_CHANNEL_SIZE};
+use crate::cfu::component::{CfuDevice, CfuDeviceContainer, InternalResponseData, RequestData};
+use crate::ipc::deferred;
 use crate::{error, intrusive_list};
+
+/// Default timeout for Cfu commands to prevent the service from hanging indefinitely
+pub const CFU_DEFAULT_TIMEOUT: Duration = Duration::from_millis(5000);
 
 /// Error type
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -24,6 +28,8 @@ pub enum CfuError {
     ComponentBusy,
     /// Component encountered a protocol error during execution
     ProtocolError(CfuProtocolError),
+    /// Timeout occurred while waiting for a response
+    Timeout,
 }
 
 /// Request to the power policy service
@@ -41,17 +47,14 @@ struct ClientContext {
     /// Registered devices
     devices: intrusive_list::IntrusiveList,
     /// Request to components
-    request: Channel<NoopRawMutex, Request, { DEVICE_CHANNEL_SIZE }>,
-    /// Response from components
-    response: Channel<NoopRawMutex, InternalResponseData, { DEVICE_CHANNEL_SIZE }>,
+    request: deferred::Channel<NoopRawMutex, Request, InternalResponseData>,
 }
 
 impl ClientContext {
     fn new() -> Self {
         Self {
             devices: intrusive_list::IntrusiveList::new(),
-            request: Channel::new(),
-            response: Channel::new(),
+            request: deferred::Channel::new(),
         }
     }
 }
@@ -89,16 +92,15 @@ async fn get_device(id: ComponentId) -> Option<&'static CfuDevice> {
 }
 
 /// Convenience function to send a request to the Cfu service
-pub async fn send_request(from: ComponentId, request: RequestData) -> Result<InternalResponseData, CfuError> {
+pub async fn send_request(from: ComponentId, request: RequestData) -> InternalResponseData {
     let context = CONTEXT.get().await;
     context
         .request
-        .send(Request {
+        .execute(Request {
             id: from,
             data: request,
         })
-        .await;
-    Ok(context.response.receive().await)
+        .await
 }
 
 /// Convenience function to route a request to a specific component
@@ -129,14 +131,9 @@ impl ContextToken {
         Some(ContextToken(()))
     }
 
-    /// Wait for a cfu request
-    pub async fn wait_request(&self) -> Request {
-        CONTEXT.get().await.request.receive().await
-    }
-
     /// Send a response to a cfu request
-    pub async fn send_response(&self, response: InternalResponseData) {
-        CONTEXT.get().await.response.send(response).await
+    pub async fn receive(&self) -> deferred::Request<NoopRawMutex, Request, InternalResponseData> {
+        CONTEXT.get().await.request.receive().await
     }
 
     /// Get a device by its ID

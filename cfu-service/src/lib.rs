@@ -26,8 +26,8 @@ impl CfuClient {
             tp: comms::Endpoint::uninit(comms::EndpointID::Internal(comms::Internal::Nonvol)),
         })
     }
-    pub async fn process_request(&self) -> Result<(), CfuError> {
-        let request = self.context.wait_request().await;
+    pub async fn process_request(&self) -> Result<InternalResponseData, CfuError> {
+        let request = self.context.receive().await;
         //let device = self.context.get_device(request.id).await?;
         let comp = request.id;
 
@@ -52,15 +52,18 @@ impl CfuClient {
                             return Err(CfuError::ProtocolError(CfuProtocolError::BadResponse));
                         }
                     }
-                    self.context.send_response(resp).await;
-                    return Ok(());
+                    Ok(resp)
                 }
                 Err(CfuError::InvalidComponent)
             }
-            RequestData::GiveContent(_content_cmd) => Ok(()),
-            RequestData::GiveOffer(_offer_cmd) => Ok(()),
-            RequestData::PrepareComponentForUpdate => Ok(()),
-            RequestData::FinalizeUpdate => Ok(()),
+            RequestData::GiveContent(_content_cmd) => {
+                InternalResponseData::ContentResponse(FwUpdateContentResponse::default())
+            }
+            RequestData::GiveOffer(_offer_cmd) => {
+                Ok(InternalResponseData::OfferResponse(FwUpdateOfferResponse::default()))
+            }
+            RequestData::PrepareComponentForUpdate => Ok(InternalResponseData::ComponentPrepared),
+            RequestData::FinalizeUpdate => Ok(InternalResponseData::ComponentPrepared),
         }
     }
 }

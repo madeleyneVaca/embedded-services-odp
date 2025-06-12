@@ -12,6 +12,7 @@ use heapless::Vec;
 use super::CfuError;
 use crate::cfu::route_request;
 use crate::intrusive_list;
+use crate::ipc::deferred;
 
 /// Component internal update state
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -93,17 +94,13 @@ pub enum InternalResponseData {
     ComponentPrepared,
 }
 
-/// Channel size for device requests
-pub const DEVICE_CHANNEL_SIZE: usize = 1;
-
 /// CfuDevice struct
 /// Can be inserted in an intrusive-list+
 pub struct CfuDevice {
     node: intrusive_list::Node,
     component_id: ComponentId,
     state: Mutex<NoopRawMutex, InternalState>,
-    request: Channel<NoopRawMutex, RequestData, DEVICE_CHANNEL_SIZE>,
-    response: Channel<NoopRawMutex, InternalResponseData, DEVICE_CHANNEL_SIZE>,
+    request: deferred::Channel<NoopRawMutex, RequestData, InternalResponseData>,
 }
 
 impl intrusive_list::NodeContainer for CfuDevice {
@@ -131,8 +128,7 @@ impl CfuDevice {
             node: intrusive_list::Node::uninit(),
             component_id,
             state: Mutex::new(InternalState::default()),
-            request: Channel::new(),
-            response: Channel::new(),
+            request: deferred::Channel::new(),
         }
     }
     /// Getter for component id
@@ -146,18 +142,12 @@ impl CfuDevice {
     }
     /// Sends a request to this device and returns a response
     pub async fn execute_device_request(&self, request: RequestData) -> Result<InternalResponseData, CfuProtocolError> {
-        self.request.send(request).await;
-        Ok(self.response.receive().await)
-    }
-
-    /// Wait for a request
-    pub async fn wait_request(&self) -> RequestData {
-        self.request.receive().await
+        self.request.execute(request).await
     }
 
     /// Send a response
-    pub async fn send_response(&self, response: InternalResponseData) {
-        self.response.send(response).await;
+    pub async fn receive(&self) -> deferred::Request<NoopRawMutex, RequestData, InternalResponseData> {
+        self.request.receive().await;
     }
 }
 
