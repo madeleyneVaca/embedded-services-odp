@@ -8,7 +8,7 @@ use embedded_cfu_protocol::protocol_definitions::*;
 use embedded_services::{
     cfu::{
         self,
-        component::{CfuDevice, InternalResponseData, Request, RequestData},
+        component::{CfuDevice, CfuRequest, InternalResponseData, RequestData},
     },
     error, intrusive_list,
     ipc::deferred,
@@ -158,7 +158,7 @@ impl<'a, C: Customization> Splitter<'a, C> {
     }
 
     /// Wait for a CFU message
-    pub async fn wait_request(&self) -> Request {
+    pub async fn wait_request(&self) -> CfuRequest {
         self.cfu_device.receive().await.command
     }
 
